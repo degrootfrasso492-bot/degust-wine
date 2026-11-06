@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-wine-50: #fdf2f3;
+  --color-wine-100: #fbe6e8;
+  --color-wine-300: #e38f98;
+  --color-wine-500: #9c2b3a;
+  --color-wine-700: #6b1a24;
+  --color-wine-900: #3d0f15;
+  --radius-xl: 1rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #fdf8f6;
+  color: #1a1412;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── Card flip animation ─────────────────────────────────────── */
+
+.flip-container {
+  perspective: 1000px;
+}
+
+.flip-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* ── Reveal pulse ────────────────────────────────────────────── */
+
+@keyframes reveal-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(156, 43, 58, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(156, 43, 58, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(156, 43, 58, 0);
+  }
+}
+
+.reveal-pulse {
+  animation: reveal-pulse 1s ease-out 2;
+}
+
+/* ── Slide-up drawer ─────────────────────────────────────────── */
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.drawer-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── Score range input ───────────────────────────────────────── */
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #9c2b3a;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(156, 43, 58, 0.3);
+}
+
+input[type='range']::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #9c2b3a;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 4px rgba(156, 43, 58, 0.3);
+}

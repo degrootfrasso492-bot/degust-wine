@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum WineCategory {
+  RED
+  WHITE
+  ROSE
+  SPARKLING
+  FORTIFIED
+  SWEET
+  VODKA
+  DISTILLATE
+  COGNAC
+  WHISKY
+  TEQUILA
+  GIN
+  LIQUEUR
+}
+
+enum DescriptorType {
+  AROMA
+  FLAVOUR
+}
+
+enum WineType {
+  WINE
+  SPIRIT
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String?   @unique @map("email")
+  phone        String?   @unique @map("phone")
+  vkId         String?   @unique @map("vk_id")
+  yandexId     String?   @unique @map("yandex_id")
+  passwordHash String?   @map("password_hash")
+  role         Role      @default(USER)
+  name         String?
+  avatar       String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  tastingNotes  TastingNote[]
+  createdEvents TastingEvent[] @relation("EventCreator")
+  participants  EventParticipant[]
+
+  @@map("users")
+}
+
+model TastingEvent {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?  @db.Text
+  date           DateTime
+  isClosed       Boolean  @default(false) @map("is_closed")
+  isManuallyOpen Boolean  @default(false) @map("is_manually_open")
+  timezone       String   @default("Europe/Moscow")
+  isBlind        Boolean  @default(false) @map("is_blind")
+  qrSlug         String   @unique @map("qr_slug")
+  accessPin      String?  @map("access_pin")
+  coverUrl       String?  @map("cover_url")
+  creatorId      String   @map("creator_id")
+  creator        User     @relation("EventCreator", fields: [creatorId], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  wines        Wine[]
+  participants EventParticipant[]
+  attributeSet EventAttributeSet?
+
+  @@index([creatorId])
+  @@map("tasting_events")
+}
+
+// Участник дегустации: пользователь, присоединившийся к событию (по QR/PIN).
+// Связь уникальна по паре (eventId, userId) — повторное присоединение не создаёт дубль.
+model EventParticipant {
+  id        String       @id @default(cuid())
+  eventId   String       @map("event_id")
+  event     TastingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String       @map("user_id")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime     @default(now()) @map("joined_at")
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("event_participants")
+}
+
+model Wine {
+  id          String       @id @default(cuid())
+  eventId     String       @map("event_id")
+  event       TastingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderIndex  Int          @map("order_index")
+  title       String
+  blindLabel  String?      @map("blind_label")
+  category    WineCategory
+  abv         Float?       @map("abv")
+  composition String?      @db.Text
+  producer    String?
+  country     String?
+  region      String?
+  aging       String?      @db.Text
+  methods     String?      @db.Text
+  description String?      @db.Text
+  photoUrl    String?      @map("photo_url")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tastingNotes TastingNote[]
+
+  @@unique([eventId, orderIndex])
+  @@index([eventId])
+  @@map("wines")
+}
+
+// Библиотека настраиваемых шкал (характеристик) для оценки вина.
+// Примеры: sweetness, acidity, tannin, body, alcohol, complexity.
+model AttributeScale {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  labelRu   String   @map("label_ru")
+  minVal    Int      @default(0) @map("min_val")
+  maxVal    Int      @default(5) @map("max_val")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  presetScales AttributePresetScale[]
+  setScales    EventAttributeSetScale[]
+
+  @@map("attribute_scales")
+}
+
+// Пресет шкал по типу вина (алкоголя): один на WineCategory.
+model AttributePreset {
+  id       String      @id @default(cuid())
+  category WineCategory @unique
+  name     String
+  scales   AttributePresetScale[]
+
+  @@map("attribute_presets")
+}
+
+model AttributePresetScale {
+  id        String          @id @default(cuid())
+  presetId  String          @map("preset_id")
+  preset    AttributePreset @relation(fields: [presetId], references: [id], onDelete: Cascade)
+  scaleId   String          @map("scale_id")
+  scale     AttributeScale  @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  sortOrder Int             @default(0) @map("sort_order")
+
+  @@unique([presetId, scaleId])
+  @@index([scaleId])
+  @@map("attribute_preset_scales")
+}
+
+// Набор шкал конкретной дегустации (один на событие).
+model EventAttributeSet {
+  id      String       @id @default(cuid())
+  eventId String       @unique @map("event_id")
+  event   TastingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  scales  EventAttributeSetScale[]
+
+  @@map("event_attribute_sets")
+}
+
+model EventAttributeSetScale {
+  id        String            @id @default(cuid())
+  setId     String            @map("set_id")
+  set       EventAttributeSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  scaleId   String            @map("scale_id")
+  scale     AttributeScale    @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  sortOrder Int               @default(0) @map("sort_order")
+
+  @@unique([setId, scaleId])
+  @@index([scaleId])
+  @@map("event_attribute_set_scales")
+}
+
+model WsetDescriptor {
+  id        String           @id @default(cuid())
+  parentId  String?          @map("parent_id")
+  parent    WsetDescriptor?  @relation("WsetDescriptorTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  WsetDescriptor[] @relation("WsetDescriptorTree")
+  category  String
+  labelRu   String           @map("label_ru")
+  labelEn   String?          @map("label_en")
+  wineType  WineType         @map("wine_type")
+  level     Int
+  sortOrder Int              @map("sort_order")
+  slug      String           @unique
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  noteDescriptors NoteDescriptor[]
+
+  @@index([parentId])
+  @@index([wineType])
+  @@map("wset_descriptors")
+}
+
+model TastingNote {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wineId    String   @map("wine_id")
+  wine      Wine     @relation(fields: [wineId], references: [id], onDelete: Cascade)
+  isLiked   Boolean  @default(false) @map("is_liked")
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  scoreValues NoteScoreValue[]
+  descriptors NoteDescriptor[]
+
+  @@unique([userId, wineId])
+  @@index([userId])
+  @@index([wineId])
+  @@map("tasting_notes")
+}
+
+model NoteScoreValue {
+  id            String      @id @default(cuid())
+  noteId        String      @map("note_id")
+  note          TastingNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  attributeName String      @map("attribute_name")
+  score         Int
+
+  @@unique([noteId, attributeName])
+  @@index([noteId, attributeName])
+  @@index([noteId])
+  @@map("note_score_values")
+}
+
+model NoteDescriptor {
+  id           String         @id @default(cuid())
+  noteId       String         @map("note_id")
+  note         TastingNote    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  descriptorId String         @map("descriptor_id")
+  descriptor   WsetDescriptor @relation(fields: [descriptorId], references: [id])
+  type         DescriptorType
+
+  @@unique([noteId, descriptorId, type])
+  @@index([noteId])
+  @@index([descriptorId])
+  @@map("note_descriptors")
+}
+
+// Фоновые задачи экспорта (PDF/Excel). Статусы хранятся в БД, чтобы задачи
+// и готовые файлы переживали перезапуск бэкенда.
+model ExportJob {
+  id        String   @id @default(cuid())
+  eventId   String   @map("event_id")
+  format    String
+  status    String   @default("waiting")
+  filePath  String?  @map("file_path")
+  error     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([eventId])
+  @@map("export_jobs")
+}
+
+// ==================== TRANSACTION BOUNDARIES ====================
+// Атомарное сохранение/обновление дегустационной заметки (upsert):
+// 1. Upsert TastingNote по уникальной паре (userId, wineId).
+// 2. Для обновления/создания оценок по шкалам:
+//    a. DeleteMany NoteScoreValue where noteId = note.id
+//    b. CreateMany новых NoteScoreValue
+// 3. Для обновления/создания выбранных дескрипторов:
+//    a. DeleteMany NoteDescriptor where noteId = note.id
+//    b. CreateMany новых NoteDescriptor
+// Все операции должны выполняться в единой транзакции (prisma.$transaction)
+// для обеспечения целостности данных.
+// ================================================================

@@ -1,0 +1,43 @@
+# Dependencies (installed inside the image)
+node_modules
+**/node_modules
+
+# Build artifacts (rebuilt inside the image)
+**/.next
+**/dist
+**/build
+**/.turbo
+
+# Stray root build artifacts
+nest
+next
+turbo
+degust-web@*
+
+# VCS
+.git
+.gitignore
+**/.git
+
+# Environment files (passed at runtime via compose)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Uploaded files & runtime data
+uploads/
+docker-data/
+tmp/
+
+# Logs & misc
+*.log
+npm-debug.log*
+pnpm-debug.log*
+coverage
+.DS_Store
+.idea
+.vscode
+
+# Lockfiles not used by the build (pnpm-lock.yaml is used)
+package-lock.json

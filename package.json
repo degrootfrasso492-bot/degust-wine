@@ -1,0 +1,30 @@
+{
+  "name": "degust-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wine tasting management system with WSET SAT integration",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "db:migrate": "cd apps/backend && pnpm prisma migrate deploy",
+    "db:seed": "cd apps/backend && pnpm prisma db seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.10",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
