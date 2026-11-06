@@ -56,8 +56,8 @@ turbo
 degust-web@*
 package-lock.json
 
-# Uploaded files
-uploads/
+# Uploaded files (runtime data only — NOT the source dir apps/backend/src/uploads)
+apps/backend/uploads/
 
 # Runtime temp (export jobs, etc.)
 tmp/
