@@ -52,8 +52,9 @@ services:
       NODE_ENV: production
     volumes:
       - uploads_data:/app/apps/backend/uploads
+    # Пробрасываем только на loopback — наружу смотрит nginx (реверс-прокси).
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
       interval: 15s
@@ -73,8 +74,9 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+    # Пробрасываем только на loopback — наружу смотрит nginx (реверс-прокси).
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 15s
