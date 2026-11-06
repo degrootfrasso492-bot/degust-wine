@@ -33,9 +33,9 @@ export default function WineResultCard({ wine, rank }: WineResultCardProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-start gap-4 p-4">
+      <div className="flex items-start gap-3 p-4">
         {/* Photo or placeholder */}
-        <div className="flex-shrink-0 w-16 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-wine-100 to-orange-50 flex items-center justify-center">
+        <div className="flex-shrink-0 w-14 h-18 sm:w-16 sm:h-20 rounded-xl overflow-hidden bg-gradient-to-br from-wine-100 to-orange-50 flex items-center justify-center">
           {wine.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -49,13 +49,13 @@ export default function WineResultCard({ wine, rank }: WineResultCardProps) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                 {medal ? (
-                  <span className="text-lg leading-none">{medal}</span>
+                  <span className="text-lg leading-none flex-shrink-0">{medal}</span>
                 ) : (
-                  <span className="text-sm font-bold text-gray-400">
+                  <span className="text-sm font-bold text-gray-400 flex-shrink-0">
                     #{rank}
                   </span>
                 )}
@@ -76,7 +76,7 @@ export default function WineResultCard({ wine, rank }: WineResultCardProps) {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1 flex-shrink-0">
               <div className="flex items-center gap-1 text-wine-500">
                 <Heart size={14} className="fill-wine-500" />
                 <span className="text-sm font-bold">{wine.likeCount}</span>

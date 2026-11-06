@@ -29,9 +29,9 @@ export default function CatalogCard({ wine }: CatalogCardProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-start gap-4 p-4">
+      <div className="flex items-start gap-3 p-4">
         {/* Photo or placeholder */}
-        <div className="flex-shrink-0 w-16 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-wine-100 to-orange-50 flex items-center justify-center">
+        <div className="flex-shrink-0 w-14 h-18 sm:w-16 sm:h-20 rounded-xl overflow-hidden bg-gradient-to-br from-wine-100 to-orange-50 flex items-center justify-center">
           {wine.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -45,8 +45,8 @@ export default function CatalogCard({ wine }: CatalogCardProps) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div className="min-w-0">
               <span className="inline-block text-[10px] uppercase tracking-wide bg-wine-50 text-wine-700 px-1.5 py-0.5 rounded-full font-semibold">
                 {WINE_CATEGORY_LABEL[wine.category] || wine.category}
               </span>
@@ -63,14 +63,14 @@ export default function CatalogCard({ wine }: CatalogCardProps) {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1 flex-shrink-0">
               <div className="flex items-center gap-1 text-wine-500">
                 <Heart size={14} className="fill-wine-500" />
                 <span className="text-sm font-bold">
                   {formatAverage(wine.averageLikeCount)}
                 </span>
               </div>
-              <span className="text-[11px] text-gray-400">
+              <span className="text-[11px] text-gray-400 whitespace-nowrap">
                 среднее по {wine.appearanceCount}{' '}
                 {pluralTastings(wine.appearanceCount)}
               </span>

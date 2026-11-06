@@ -25,26 +25,26 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-wine-50 to-orange-50">
       <div className="max-w-2xl mx-auto p-4 pb-16">
         {/* Nav */}
-        <nav className="flex items-center justify-between py-4 mb-2">
-          <div className="flex items-center gap-2">
-            <Wine size={24} className="text-wine-500" />
-            <span className="font-bold text-xl text-wine-700">Drinx-edu</span>
+        <nav className="flex items-center justify-between py-4 mb-2 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Wine size={24} className="text-wine-500 flex-shrink-0" />
+            <span className="font-bold text-xl text-wine-700 truncate">Drinx-edu</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
             <Link
               href="/catalog"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
             >
-              <Library size={15} />
-              Каталог
+              <Library size={15} className="flex-shrink-0" />
+              <span className="hidden sm:inline">Каталог</span>
             </Link>
             {isAdmin && (
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-wine-500 text-white text-sm font-medium hover:bg-wine-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-wine-500 text-white text-sm font-medium hover:bg-wine-700 transition-colors whitespace-nowrap"
               >
-                <LayoutDashboard size={15} />
-                Админ-панель
+                <LayoutDashboard size={15} className="flex-shrink-0" />
+                <span className="hidden sm:inline">Админ-панель</span>
               </Link>
             )}
             {isAuthenticated ? (
@@ -52,15 +52,15 @@ export default function HomePage() {
                 href="/profile"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <User size={15} />
-                {user?.name ?? 'Профиль'}
+                <User size={15} className="flex-shrink-0" />
+                <span className="max-w-[100px] sm:max-w-none truncate">{user?.name ?? 'Профиль'}</span>
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-wine-500 text-white text-sm font-medium hover:bg-wine-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-wine-500 text-white text-sm font-medium hover:bg-wine-700 transition-colors whitespace-nowrap"
               >
-                <LogIn size={15} />
+                <LogIn size={15} className="flex-shrink-0" />
                 Войти
               </Link>
             )}
@@ -118,7 +118,7 @@ export default function HomePage() {
               <ChevronRight size={18} className="text-gray-300" />
             </Link>
             <Link
-              href="/profile"
+              href="/profile?tab=events"
               className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow"
             >
               <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center">

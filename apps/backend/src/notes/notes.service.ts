@@ -150,6 +150,11 @@ export class NotesService {
       where: {
         userId,
         isLiked: true,
+        wine: {
+          event: {
+            isClosed: true,
+          },
+        },
       },
       include: {
         scoreValues: true,
@@ -175,9 +180,17 @@ export class NotesService {
 
   async getUserNotesHistory(userId: string, page = 1, limit = 30) {
     const skip = (page - 1) * limit;
+    const where = {
+      userId,
+      wine: {
+        event: {
+          isClosed: true,
+        },
+      },
+    };
     const [items, total] = await Promise.all([
       this.prisma.tastingNote.findMany({
-        where: { userId },
+        where,
         include: {
           scoreValues: true,
           descriptors: {
@@ -200,7 +213,7 @@ export class NotesService {
         skip,
         take: limit,
       }),
-      this.prisma.tastingNote.count({ where: { userId } }),
+      this.prisma.tastingNote.count({ where }),
     ]);
     return { items, total, page, limit };
   }

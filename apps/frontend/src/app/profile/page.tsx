@@ -53,7 +53,13 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, clearAuth, updateUser, isAuthenticated, isLoading: authLoading } =
     useAuthStore();
-  const [activeTab, setActiveTab] = useState<Tab>('liked');
+  
+  // Читаем tab из URL query параметров
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const urlTab = searchParams?.get('tab') as Tab | null;
+  const [activeTab, setActiveTab] = useState<Tab>(
+    urlTab && ['liked', 'history', 'events'].includes(urlTab) ? urlTab : 'liked'
+  );
   const [selectedNote, setSelectedNote] = useState<TastingNoteWithWine | null>(
     null,
   );
