@@ -37,7 +37,7 @@ export default function CatalogCard({ wine }: CatalogCardProps) {
             <img
               src={wine.photoUrl}
               alt={wine.title || ''}
-              className="object-cover w-full h-full"
+              className="object-contain w-full h-full"
             />
           ) : (
             <span className="text-2xl">🍷</span>

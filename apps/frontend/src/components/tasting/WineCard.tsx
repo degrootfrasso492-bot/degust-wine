@@ -282,7 +282,7 @@ function WineInfoHeader({
         <img
           src={wine.photoUrl}
           alt={wine.title ?? ''}
-          className="w-16 h-20 rounded-xl object-cover flex-shrink-0 bg-wine-50"
+          className="w-16 h-20 rounded-xl object-contain flex-shrink-0 bg-wine-50"
         />
       ) : (
         <div className="w-16 h-20 rounded-xl bg-gradient-to-br from-wine-100 to-orange-50 flex items-center justify-center flex-shrink-0">

@@ -55,7 +55,11 @@ export default function ImageUpload({
             <Loader2 size={22} className="animate-spin" />
           ) : value ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt={label} className="w-full h-full object-cover" />
+            <img
+              src={value}
+              alt={label}
+              className={`w-full h-full ${aspect === 'bottle' ? 'object-contain' : 'object-cover'}`}
+            />
           ) : (
             <div className="flex flex-col items-center gap-1">
               <ImagePlus size={20} />

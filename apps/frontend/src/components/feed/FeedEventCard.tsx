@@ -84,7 +84,7 @@ export function FeedEventCard({ event }: { event: FeedEvent }) {
                   alt={wine.title}
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                  className="w-8 h-8 rounded-lg object-contain flex-shrink-0"
                 />
               ) : (
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-wine-100 to-orange-50 flex items-center justify-center flex-shrink-0">
