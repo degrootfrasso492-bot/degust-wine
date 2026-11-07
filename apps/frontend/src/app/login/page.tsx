@@ -28,6 +28,16 @@ function errorMessageFromError(err: unknown): string {
   return 'Не удалось выполнить запрос. Попробуйте позже';
 }
 
+function safeRedirect(): string {
+  if (typeof window === 'undefined') return '/';
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+  if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+    return redirect;
+  }
+  return '/';
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { setUser, isAuthenticated } = useAuthStore();
@@ -40,7 +50,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isAuthenticated) router.replace('/');
+    if (isAuthenticated) router.replace(safeRedirect());
   }, [isAuthenticated, router]);
 
   useEffect(() => {
@@ -88,7 +98,7 @@ export default function LoginPage() {
             });
       setToken(response.accessToken);
       setUser(response.user, response.accessToken);
-      router.replace('/');
+      router.replace(safeRedirect());
     } catch (err) {
       setError(errorMessageFromError(err));
     } finally {

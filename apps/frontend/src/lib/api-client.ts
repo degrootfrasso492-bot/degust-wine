@@ -27,7 +27,9 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`API ${res.status}: ${body}`);
+    const error = new Error(`API ${res.status}: ${body}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
   }
 
   if (res.status === 204) return undefined as T;

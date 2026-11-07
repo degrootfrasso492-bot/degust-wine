@@ -20,7 +20,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { WineSerializer } from './wine.serializer';
 import { Role } from '@prisma/client';
-import { AuthService } from '../auth/auth.service';
+
 import { EventPhaseService } from './event-phase.service';
 import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard';
 import { ScalesService } from '../scales/scales.service';
@@ -36,7 +36,7 @@ import { ScalesService } from '../scales/scales.service';
 export class EventsController {
   constructor(
     private eventsService: EventsService,
-    private authService: AuthService,
+    
     private eventPhase: EventPhaseService,
     private scalesService: ScalesService,
   ) {}
@@ -69,25 +69,16 @@ export class EventsController {
 
   /**
    * Присоединение по QR. Объявлено до `:id`, иначе `join/abc` уйдёт в `:id`.
-   * Гость без токена получает гостевую сессию, авторизованный — только событие.
-   * OptionalJwtAuthGuard нужен, чтобы вернувшийся гость/пользователь с валидным
-   * токеном не создавал новую гостевую запись каждый раз.
+   * Гостевой вход по QR удалён: доступ только авторизованным пользователям,
+   * неавторизованный перенаправляется фронтендом на страницу входа.
    */
-  @Public()
-  @UseGuards(OptionalJwtAuthGuard)
   @Get('join/:qrSlug')
   async joinEvent(
     @Param('qrSlug') qrSlug: string,
     @Query('pin') pin?: string,
     @CurrentUser() user?: any,
   ) {
-    const event = await this.eventsService.joinByQrSlug(qrSlug, pin, user?.id);
-
-    if (!user) {
-      const guestSession = await this.authService.createGuestUser();
-      return { event, guest: guestSession };
-    }
-
+    const event = await this.eventsService.joinByQrSlug(qrSlug, pin, user.id);
     return { event };
   }
 

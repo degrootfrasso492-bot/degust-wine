@@ -174,16 +174,6 @@ export class AuthService {
     };
   }
 
-  async createGuestUser() {
-    const user = await this.prisma.user.create({
-      data: { role: 'USER' },
-    });
-    return {
-      accessToken: this.issueToken(user),
-      user: this.toPublicUser(user),
-    };
-  }
-
   /** Обновляет имя и/или аватар текущего пользователя. */
   async updateProfile(
     userId: string,

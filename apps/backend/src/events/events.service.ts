@@ -250,10 +250,10 @@ export class EventsService {
   /**
    * Присоединение к событию по QR-слагу.
    *
-   * userId приходит только для авторизованного пользователя. Гость (userId
-   * отсутствует) присоединяется без записи участника и без ошибки.
+   * userId приходит только для авторизованного пользователя, которого
+   * гарантирует JWT-гард на маршруте.
    */
-  async joinByQrSlug(qrSlug: string, pin?: string, userId?: string) {
+  async joinByQrSlug(qrSlug: string, pin: string | undefined, userId: string) {
     const event = await this.prisma.tastingEvent.findUnique({
       where: { qrSlug },
     });
@@ -262,14 +262,12 @@ export class EventsService {
       throw new ForbiddenException('Invalid PIN');
     }
 
-    if (userId) {
-      // Повторное присоединение не должно создавать дубль — ключ (eventId, userId).
-      await this.prisma.eventParticipant.upsert({
-        where: { eventId_userId: { eventId: event.id, userId } },
-        update: {},
-        create: { eventId: event.id, userId },
-      });
-    }
+    // Повторное присоединение не должно создавать дубль — ключ (eventId, userId).
+    await this.prisma.eventParticipant.upsert({
+      where: { eventId_userId: { eventId: event.id, userId } },
+      update: {},
+      create: { eventId: event.id, userId },
+    });
 
     return this.withPhase(event);
   }

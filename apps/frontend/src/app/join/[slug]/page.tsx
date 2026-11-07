@@ -4,15 +4,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { Loader2, Lock, Wine } from 'lucide-react';
-import { api, setToken } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
-import { TastingEvent, User } from '@/types/api';
+import { TastingEvent } from '@/types/api';
 
 export default function JoinPage() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
-  const { isLoading, setUser } = useAuthStore();
+  const { isLoading, isAuthenticated } = useAuthStore();
+  const loginUrl = `/login?redirect=${encodeURIComponent(`/join/${slug}`)}`;
 
   const [pin, setPin] = useState('');
   const [needsPin, setNeedsPin] = useState(false);
@@ -27,15 +28,7 @@ export default function JoinPage() {
       const url = pinValue
         ? `/events/join/${slug}?pin=${encodeURIComponent(pinValue)}`
         : `/events/join/${slug}`;
-      const result = await api.get<{
-        event: TastingEvent;
-        guest?: { accessToken: string; user: User };
-      }>(url);
-
-      if (result.guest) {
-        setToken(result.guest.accessToken);
-        setUser(result.guest.user, result.guest.accessToken);
-      }
+      const result = await api.get<{ event: TastingEvent }>(url);
 
       setEvent(result.event);
       router.replace(`/tasting/${result.event.id}`);
@@ -44,6 +37,8 @@ export default function JoinPage() {
       if (status === 403) {
         setNeedsPin(true);
         if (pinValue) setError('Неверный PIN-код');
+      } else if (status === 401) {
+        router.replace(loginUrl);
       } else {
         setError('Мероприятие не найдено или недоступно');
       }
@@ -53,11 +48,14 @@ export default function JoinPage() {
   };
 
   useEffect(() => {
-    if (!isLoading) {
-      tryJoin();
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      router.replace(loginUrl);
+      return;
     }
+    tryJoin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading]);
+  }, [isLoading, isAuthenticated, loginUrl]);
 
   if (loading && !needsPin) {
     return (
