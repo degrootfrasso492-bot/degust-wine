@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Wine, LogIn, User, QrCode, Heart, ChevronRight, LayoutDashboard, Library } from 'lucide-react';
+import { Wine, LogIn, User, Heart, ChevronRight, LayoutDashboard, Library } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { FeedPage } from '@/types/api';
@@ -80,20 +80,13 @@ export default function HomePage() {
               Оценивайте вина по методике WSET, добавляйте дескрипторы и
               сравнивайте с залом
             </p>
-            <div className="flex gap-3">
+            <div className="flex">
               <Link
                 href="/login"
                 className="flex-1 flex items-center justify-center gap-2 bg-wine-500 text-white rounded-xl py-3 font-medium hover:bg-wine-700 transition-colors"
               >
                 <LogIn size={16} />
                 Войти
-              </Link>
-              <Link
-                href="/join"
-                className="flex-1 flex items-center justify-center gap-2 border-2 border-wine-300 text-wine-700 rounded-xl py-3 font-medium hover:bg-wine-50 transition-colors"
-              >
-                <QrCode size={16} />
-                По QR-коду
               </Link>
             </div>
           </div>
