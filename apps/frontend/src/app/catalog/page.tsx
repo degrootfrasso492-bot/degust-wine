@@ -48,6 +48,10 @@ export default function CatalogPage() {
   if (type) params.set('type', type);
   if (categories.length) params.set('categories', categories.join(','));
   if (country) params.set('country', country);
+  // Backend paginates; каталог небольшой, грузим максимальную страницу,
+  // чтобы не менять привычное поведение списка.
+  params.set('page', '1');
+  params.set('limit', '100');
 
   const { data, isLoading, isError } = useQuery<CatalogResponse>({
     queryKey: ['catalog', params.toString()],

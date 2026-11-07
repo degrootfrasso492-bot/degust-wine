@@ -3,12 +3,19 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { getJwtSecret } from './jwt-secret';
+import { AUTH_COOKIE, readCookie } from './auth-cookies';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Основной транспорт — httpOnly-cookie; Bearer оставлен для API-клиентов
+      // и обратной совместимости.
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (request: { headers?: { cookie?: string } }) =>
+          readCookie(request?.headers?.cookie, AUTH_COOKIE),
+      ]),
       ignoreExpiration: false,
       secretOrKey: getJwtSecret(),
     });

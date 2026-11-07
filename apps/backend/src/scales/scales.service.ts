@@ -127,8 +127,17 @@ export class ScalesService {
     );
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.eventAttributeSet.deleteMany({ where: { eventId } });
-      const set = await tx.eventAttributeSet.create({ data: { eventId } });
+      // Не удаляем сам набор: пока идёт активная дегустация, notes/upsert
+      // валидирует оценки по eventAttributeSet. Удаление родителя на время
+      // транзакции давало 400 «Неизвестная характеристика» и гонку с
+      // параллельными заметками. Перезаписываем только дочерние строки.
+      const set = await tx.eventAttributeSet.upsert({
+        where: { eventId },
+        update: {},
+        create: { eventId },
+      });
+
+      await tx.eventAttributeSetScale.deleteMany({ where: { setId: set.id } });
       await tx.eventAttributeSetScale.createMany({
         data: orderedIds.map((scaleId, i) => ({
           setId: set.id,

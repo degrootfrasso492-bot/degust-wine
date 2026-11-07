@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,12 +20,43 @@ export interface ExportJob {
 const EXPORTS_DIR = path.join(process.cwd(), 'tmp', 'exports');
 
 @Injectable()
-export class ExportService {
+export class ExportService implements OnModuleInit {
+  /**
+   * In-process очередь с последовательной обработкой.
+   *
+   * PDFKit/ExcelJS — CPU-интенсивные синхронные участки; параллельный запуск
+   * нескольких экспортов блокировал бы event loop и замедлял дегустацию.
+   * Для горизонтального масштабирования эту очередь нужно заменить на
+   * BullMQ/Redis и S3 (см. README), но даже локально она убирает пиковые
+   * блокировки и восстанавливает незавершённые задачи после рестарта.
+   */
+  private readonly queue: string[] = [];
+  private draining = false;
+
   constructor(
     private prisma: PrismaService,
     private analyticsService: AnalyticsService,
   ) {
     fs.mkdirSync(EXPORTS_DIR, { recursive: true });
+  }
+
+  async onModuleInit() {
+    try {
+      const pending = await this.prisma.exportJob.findMany({
+        where: { status: { in: ['waiting', 'active'] } },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+        take: 100,
+      });
+      for (const job of pending) this.enqueue(job.id);
+    } catch (error) {
+      // Не валим старт приложения из-за очереди: БД может быть ещё недоступна,
+      // а health-check всё равно покажет проблему.
+      console.warn(
+        '[export] не удалось восстановить очередь:',
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
 
   async createJob(eventId: string, format: ExportFormat): Promise<ExportJob> {
@@ -38,18 +69,41 @@ export class ExportService {
       data: { eventId, format, status: 'waiting' },
     });
 
-    // Обработка в фоне; статус и результат пишутся в БД, поэтому задача
-    // переживает перезапуск процесса.
-    this.processJob(row.id).catch(async (err: Error) => {
-      await this.prisma.exportJob
-        .update({
-          where: { id: row.id },
-          data: { status: 'failed', error: err.message },
-        })
-        .catch(() => undefined);
-    });
+    // Запуск на следующем тике: HTTP-ответ уходит раньше тяжёлой генерации.
+    this.enqueue(row.id);
 
     return this.toDto(row);
+  }
+
+  private enqueue(jobId: string): void {
+    if (this.queue.includes(jobId)) return;
+    this.queue.push(jobId);
+    setImmediate(() => void this.drain());
+  }
+
+  private async drain(): Promise<void> {
+    if (this.draining) return;
+    this.draining = true;
+    try {
+      while (this.queue.length > 0) {
+        const jobId = this.queue.shift()!;
+        try {
+          await this.processJob(jobId);
+        } catch (err) {
+          await this.prisma.exportJob
+            .update({
+              where: { id: jobId },
+              data: {
+                status: 'failed',
+                error: err instanceof Error ? err.message : String(err),
+              },
+            })
+            .catch(() => undefined);
+        }
+      }
+    } finally {
+      this.draining = false;
+    }
   }
 
   async getJob(jobId: string): Promise<ExportJob> {

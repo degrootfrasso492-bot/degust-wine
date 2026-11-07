@@ -78,27 +78,24 @@ export default function ResultsPage() {
   };
 
   const downloadFile = (jobId: string) => {
-    const token =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('degust_token')
-        : null;
     const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/export/jobs/${jobId}/download`;
-    if (token) {
-      fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-        .then((r) => r.blob())
-        .then((blob) => {
-          const blobUrl = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = `drinx-edu-${eventId}.${pdfJobId === jobId ? 'pdf' : 'xlsx'}`;
-          a.click();
-          URL.revokeObjectURL(blobUrl);
-        });
-    } else {
-      const a = document.createElement('a');
-      a.href = url;
-      a.click();
-    }
+    fetch(url, { credentials: 'include' })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Export download failed: ${r.status}`);
+        return r.blob();
+      })
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `drinx-edu-${eventId}.${pdfJobId === jobId ? 'pdf' : 'xlsx'}`;
+        a.click();
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(() => {
+        // Сессия могла истечь — отправляем на страницу входа.
+        window.location.href = '/login';
+      });
   };
 
   if (cardLoading || !event) {

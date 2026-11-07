@@ -1,5 +1,6 @@
-import { Controller, Sse, Param, MessageEvent } from '@nestjs/common';
-import { Observable, map, filter } from 'rxjs';
+import { Controller, Sse, Param, Req, MessageEvent } from '@nestjs/common';
+import type { Request } from 'express';
+import { Observable, map, filter, fromEvent, takeUntil } from 'rxjs';
 import { EventsGateway } from './events.gateway';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -13,12 +14,20 @@ export class EventsSseController {
   // участников и вин, поэтому публичность здесь безопасна.
   @Public()
   @Sse(':eventId/stream')
-  stream(@Param('eventId') eventId: string): Observable<MessageEvent> {
+  stream(
+    @Param('eventId') eventId: string,
+    @Req() req: Request,
+  ): Observable<MessageEvent> {
+    // Без takeUntil подписка на общий Subject жила бы после закрытия HTTP-
+    // соединения: каждый ушедший клиент оставался бы в памяти навсегда.
+    const close$ = fromEvent(req, 'close');
+
     return this.gateway.revealStream$.pipe(
       filter((event) => event.eventId === eventId),
       map((event) => ({
         data: { message: event.message, eventId: event.eventId },
       })),
+      takeUntil(close$),
     );
   }
 }

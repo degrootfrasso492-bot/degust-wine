@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpsertNoteDto } from './dto/note.dto';
+import { DescriptorType, Prisma } from '@prisma/client';
 import { EventPhaseService } from '../events/event-phase.service';
 
 @Injectable()
@@ -58,29 +59,11 @@ export class NotesService {
       });
 
       if (dto.scores && dto.scores.length > 0) {
-        await tx.noteScoreValue.deleteMany({
-          where: { noteId: note.id },
-        });
-        await tx.noteScoreValue.createMany({
-          data: dto.scores.map((s) => ({
-            noteId: note.id,
-            attributeName: s.attributeName,
-            score: s.score,
-          })),
-        });
+        await this.syncScoreValues(tx, note.id, dto.scores);
       }
 
       if (dto.descriptors && dto.descriptors.length > 0) {
-        await tx.noteDescriptor.deleteMany({
-          where: { noteId: note.id },
-        });
-        await tx.noteDescriptor.createMany({
-          data: dto.descriptors.map((d) => ({
-            noteId: note.id,
-            descriptorId: d.descriptorId,
-            type: d.type,
-          })),
-        });
+        await this.syncDescriptors(tx, note.id, dto.descriptors);
       }
 
       return tx.tastingNote.findUnique({
@@ -93,6 +76,79 @@ export class NotesService {
         },
       });
     });
+  }
+
+  /**
+   * Точечная синхронизация оценок вместо delete-all + insert-all.
+   * При debounce-сохранении меняется 1–2 ползунка, поэтому пишем только
+   * реально изменившиеся строки и удаляем лишь пропавшие характеристики.
+   */
+  private async syncScoreValues(
+    tx: Prisma.TransactionClient,
+    noteId: string,
+    scores: { attributeName: string; score: number }[],
+  ): Promise<void> {
+    const existing = await tx.noteScoreValue.findMany({
+      where: { noteId },
+      select: { id: true, attributeName: true, score: true },
+    });
+    const existingByName = new Map(existing.map((row) => [row.attributeName, row]));
+    const incoming = new Map(scores.map((s) => [s.attributeName, s.score]));
+
+    const removedIds = existing
+      .filter((row) => !incoming.has(row.attributeName))
+      .map((row) => row.id);
+    if (removedIds.length > 0) {
+      await tx.noteScoreValue.deleteMany({ where: { id: { in: removedIds } } });
+    }
+
+    const toCreate: { noteId: string; attributeName: string; score: number }[] = [];
+    for (const [attributeName, score] of incoming) {
+      const row = existingByName.get(attributeName);
+      if (!row) {
+        toCreate.push({ noteId, attributeName, score });
+      } else if (row.score !== score) {
+        await tx.noteScoreValue.update({ where: { id: row.id }, data: { score } });
+      }
+    }
+    if (toCreate.length > 0) {
+      await tx.noteScoreValue.createMany({ data: toCreate });
+    }
+  }
+
+  /** Точечная синхронизация дескрипторов (ключ: descriptorId + type). */
+  private async syncDescriptors(
+    tx: Prisma.TransactionClient,
+    noteId: string,
+    descriptors: { descriptorId: string; type: DescriptorType }[],
+  ): Promise<void> {
+    const keyOf = (descriptorId: string, type: DescriptorType) =>
+      `${descriptorId}:${type}`;
+
+    const existing = await tx.noteDescriptor.findMany({
+      where: { noteId },
+      select: { id: true, descriptorId: true, type: true },
+    });
+    const existingKeys = new Set(
+      existing.map((row) => keyOf(row.descriptorId, row.type)),
+    );
+    const incomingKeys = new Set(
+      descriptors.map((d) => keyOf(d.descriptorId, d.type)),
+    );
+
+    const removedIds = existing
+      .filter((row) => !incomingKeys.has(keyOf(row.descriptorId, row.type)))
+      .map((row) => row.id);
+    if (removedIds.length > 0) {
+      await tx.noteDescriptor.deleteMany({ where: { id: { in: removedIds } } });
+    }
+
+    const toCreate = descriptors
+      .filter((d) => !existingKeys.has(keyOf(d.descriptorId, d.type)))
+      .map((d) => ({ noteId, descriptorId: d.descriptorId, type: d.type }));
+    if (toCreate.length > 0) {
+      await tx.noteDescriptor.createMany({ data: toCreate });
+    }
   }
 
   /**

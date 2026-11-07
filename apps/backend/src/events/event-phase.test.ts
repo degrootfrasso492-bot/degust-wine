@@ -20,6 +20,15 @@ describe('computeEventPhase', () => {
     assert.equal(computeEventPhase(vvo, at('2026-11-11T14:00:00Z')), EventPhase.OPEN);
   });
 
+  it('America/New_York: дата события не съезжает на предыдущий день (UTC-5)', () => {
+    const ny = { ...base, timezone: 'America/New_York' };
+    // 2026-11-12 00:00 EST = 05:00Z.
+    assert.equal(computeEventPhase(ny, at('2026-11-12T04:59:59Z')), EventPhase.UPCOMING);
+    assert.equal(computeEventPhase(ny, at('2026-11-12T05:00:00Z')), EventPhase.OPEN);
+    assert.equal(computeEventPhase(ny, at('2026-11-13T04:59:59Z')), EventPhase.OPEN);
+    assert.equal(computeEventPhase(ny, at('2026-11-13T05:00:00Z')), EventPhase.CLOSED);
+  });
+
   it('isClosed в день события -> CLOSED', () => {
     assert.equal(
       computeEventPhase({ ...base, isClosed: true }, at('2026-11-12T10:00:00Z')),

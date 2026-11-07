@@ -4,14 +4,13 @@ import { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Wine, Loader2, ArrowRight, Home, Library } from 'lucide-react';
-import { api, setToken } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { User } from '@/types/api';
 
 type Mode = 'login' | 'register';
 
 interface AuthResponse {
-  accessToken: string;
   user: User;
 }
 
@@ -24,6 +23,7 @@ function errorMessageFromError(err: unknown): string {
 
   if (code === 401) return 'Неверный логин или пароль';
   if (code === 409) return 'Пользователь с такими данными уже существует';
+  if (code === 429) return 'Слишком много попыток. Попробуйте через минуту';
   if (code === 400) return 'Проверьте email/телефон и пароль (минимум 8 символов)';
   return 'Не удалось выполнить запрос. Попробуйте позже';
 }
@@ -57,6 +57,8 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('error') === 'oauth') {
       setError('Не удалось войти через VK/Яндекс');
+    } else if (params.get('error') === 'oauth_state') {
+      setError('Сессия входа истекла. Попробуйте войти ещё раз');
     }
   }, []);
 
@@ -96,8 +98,7 @@ export default function LoginPage() {
               password,
               ...(name.trim() ? { name: name.trim() } : {}),
             });
-      setToken(response.accessToken);
-      setUser(response.user, response.accessToken);
+      setUser(response.user);
       router.replace(safeRedirect());
     } catch (err) {
       setError(errorMessageFromError(err));

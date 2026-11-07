@@ -15,6 +15,8 @@ export class CatalogController {
     @Query('country') country?: string,
     @Query('sort') sort?: string,
     @Query('order') order?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.catalogService.getCatalog({
       q,
@@ -23,6 +25,8 @@ export class CatalogController {
       country,
       sort: sort === 'newest' ? 'newest' : 'likes',
       order: order === 'asc' ? 'asc' : 'desc',
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
     });
   }
 }

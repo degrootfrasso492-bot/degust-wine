@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
 import { ScalesService } from './scales.service';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -12,12 +12,14 @@ export class ScalesController {
 
   @Public()
   @Get()
+  @Header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
   listScales() {
     return this.scalesService.listScales();
   }
 
   @Public()
   @Get('presets')
+  @Header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
   listPresets() {
     return this.scalesService.listPresets();
   }

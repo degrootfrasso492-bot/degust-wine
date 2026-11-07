@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { api, setToken } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { User } from '@/types/api';
 
@@ -12,24 +12,15 @@ export default function AuthCallbackPage() {
   const startedRef = useRef(false);
 
   useEffect(() => {
-    // Токен во фрагменте читаем один раз (защита от двойного запуска в StrictMode).
+    // Защита от двойного запуска в StrictMode.
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    const token = params.get('token');
-    window.history.replaceState(null, '', window.location.pathname);
-
-    if (!token) {
-      router.replace('/login');
-      return;
-    }
-
     const run = async () => {
       try {
-        setToken(token);
+        // JWT уже в httpOnly-cookie, установленной backend при callback.
         const user = await api.get<User>('/auth/me');
-        useAuthStore.getState().setUser(user, token);
+        useAuthStore.getState().setUser(user);
         router.replace('/');
       } catch {
         useAuthStore.getState().clearAuth();

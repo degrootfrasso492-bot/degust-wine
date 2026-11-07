@@ -9,6 +9,7 @@ import {
   Param,
   Query,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
@@ -16,6 +17,7 @@ import { CreateWineDto, UpdateWineDto } from './dto/wine.dto';
 import { SetEventScalesDto } from './dto/scales.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { WineSerializer } from './wine.serializer';
@@ -73,11 +75,15 @@ export class EventsController {
    * неавторизованный перенаправляется фронтендом на страницу входа.
    */
   @Get('join/:qrSlug')
+  @UseGuards(JwtAuthGuard)
   async joinEvent(
     @Param('qrSlug') qrSlug: string,
     @Query('pin') pin?: string,
     @CurrentUser() user?: any,
   ) {
+    if (!user?.id) {
+      throw new UnauthorizedException('Необходима авторизация');
+    }
     const event = await this.eventsService.joinByQrSlug(qrSlug, pin, user.id);
     return { event };
   }

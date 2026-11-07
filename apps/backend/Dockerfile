@@ -1,4 +1,5 @@
-FROM node:20-alpine AS base
+# Node 22 нужен file-type@22 (детект magic bytes) и совместим с Nest 12.
+FROM node:22-alpine AS base
 WORKDIR /app
 RUN corepack enable
 

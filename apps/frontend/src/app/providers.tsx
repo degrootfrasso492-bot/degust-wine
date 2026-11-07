@@ -19,9 +19,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const initFromStorage = useAuthStore((s) => s.initFromStorage);
 
-  // Initialise auth from localStorage once on app mount (client-side only).
-  // This ensures isLoading → false and token/user are populated before any
-  // page-level auth guard runs.
+  // Проверяем httpOnly-cookie сессии через /auth/me один раз при монтировании.
+  // Это гарантирует isLoading → false и user до любых page-level auth guard.
   useEffect(() => {
     initFromStorage();
   }, [initFromStorage]);

@@ -29,17 +29,37 @@ function resolveTimeZone(timeZone: string): string {
 }
 
 /**
+ * Календарный день события в его часовом поясе.
+ *
+ * `event.date` создаётся как `new Date('YYYY-MM-DD')`, то есть UTC-полночь,
+ * обозначающая выбранную администратором календарную дату. Если приводить
+ * такую дату к локальному поясу (как раньше), для UTC-X (например,
+ * America/New_York) 00:00Z попадает в предыдущий день, и фаза сдвигается.
+ *
+ * Поэтому для «полуночных» значений берём UTC-компоненты (это и есть
+ * записанный календарный день), а для дат со временем — локальный день пояса.
+ */
+function getEventDay(date: Date, timeZone: string): string {
+  const d = new Date(date);
+  const isUtcMidnight =
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0;
+
+  if (isUtcMidnight) {
+    return d.toISOString().slice(0, 10);
+  }
+  return getLocalDay(d, timeZone);
+}
+
+/**
  * Фаза дегустации. Приоритет правил:
  * 1. isClosed -> CLOSED
  * 2. isManuallyOpen -> OPEN
  * 3. локальный день «сейчас» < дня события -> UPCOMING
  * 4. дни равны -> OPEN
  * 5. день «сейчас» > дня события -> CLOSED
- *
- * Важно: event.date хранится в UTC. Дата без времени (YYYY-MM-DD) трактуется
- * как 00:00Z. Для часовых поясов с положительным смещением (например, РФ)
- * локальный день события совпадает с датой из строки, поэтому это корректно.
- * Для поясов с отрицательным смещением потребуется отдельная обработка.
  */
 export function computeEventPhase(
   event: { date: Date; isClosed: boolean; isManuallyOpen: boolean; timezone: string },
@@ -50,7 +70,7 @@ export function computeEventPhase(
 
   const tz = resolveTimeZone(event.timezone);
   const today = getLocalDay(now, tz);
-  const eventDay = getLocalDay(new Date(event.date), tz);
+  const eventDay = getEventDay(new Date(event.date), tz);
 
   if (today < eventDay) return EventPhase.UPCOMING;
   if (today === eventDay) return EventPhase.OPEN;

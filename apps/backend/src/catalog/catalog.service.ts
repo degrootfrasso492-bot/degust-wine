@@ -51,6 +51,8 @@ export interface CatalogResponse {
   items: CatalogWine[];
   countries: string[];
   total: number;
+  page: number;
+  limit: number;
 }
 
 export interface CatalogQuery {
@@ -60,6 +62,8 @@ export interface CatalogQuery {
   country?: string;
   sort?: 'likes' | 'newest';
   order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
 }
 
 const WINE_CATEGORIES = new Set<WineCategory>([
@@ -127,6 +131,15 @@ export class CatalogService {
   constructor(private prisma: PrismaService) {}
 
   async getCatalog(query: CatalogQuery): Promise<CatalogResponse> {
+    const page =
+      Number.isFinite(query.page) && (query.page as number) >= 1
+        ? Math.floor(query.page as number)
+        : 1;
+    const limit =
+      Number.isFinite(query.limit) && (query.limit as number) >= 1
+        ? Math.min(Math.floor(query.limit as number), 100)
+        : 20;
+
     const events = await this.prisma.tastingEvent.findMany({
       select: {
         id: true,
@@ -142,7 +155,7 @@ export class CatalogService {
       .map((e) => e.id);
 
     if (closedEventIds.length === 0) {
-      return { items: [], countries: [], total: 0 };
+      return { items: [], countries: [], total: 0, page, limit };
     }
 
     const [wines, scales] = await Promise.all([
@@ -184,13 +197,24 @@ export class CatalogService {
     const filtered = this.applyFilters(items, query);
     this.applySort(filtered, query);
 
+    // Пагинация на уровне ответа: без неё публичный каталог выгружал все
+    // когда-либо закрытые дегустации одним JSON и мог уронить процесс по RAM.
+    const start = (page - 1) * limit;
+    const pagedItems = filtered.slice(start, start + limit);
+
     const countries = [
       ...new Set(
         items.map((i) => i.country).filter((c): c is string => Boolean(c)),
       ),
     ].sort((a, b) => a.localeCompare(b, 'ru'));
 
-    return { items: filtered, countries, total: filtered.length };
+    return {
+      items: pagedItems,
+      countries,
+      total: filtered.length,
+      page,
+      limit,
+    };
   }
 
   private buildItem(
